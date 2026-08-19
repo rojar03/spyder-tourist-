@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kavach Tourist — Digital ID, Safety Map &amp; SOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+    --bg:#0B1120;
+    --surface:#111A2E;
+    --surface-2:#16213A;
+    --line:#243252;
+    --text:#E8ECF4;
+    --muted:#8A93A6;
+    --accent:#FF7A29;
+    --accent-2:#FFB35C;
+    --safe:#2DD4A7;
+    --caution:#FFCF56;
+    --danger:#FF4757;
+    --danger-2:#FF6B78;
+    --radius:14px;
+    --display:'Space Grotesk',sans-serif;
+    --body:'IBM Plex Sans',sans-serif;
+    --mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #1A2540 0%, transparent 60%),
+      radial-gradient(1000px 500px at 110% 10%, #16223f 0%, transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent);color:#0B1120;}
+  a{color:inherit;}
+  button{font-family:var(--body);cursor:pointer;}
+  .wrap{max-width:1320px;margin:0 auto;padding:0 20px 60px;}
+
+  header.top{position:sticky;top:0;z-index:40;background:rgba(11,17,32,0.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+  .top-inner{max-width:1320px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:10px;margin-right:auto;}
+  .brand-mark{width:34px;height:34px;flex:none;}
+  .brand-name{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:0.2px;}
+  .brand-sub{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;margin-top:-2px;}
+
+  nav.roles{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;}
+  nav.roles button{border:none;background:transparent;color:var(--muted);padding:9px 16px;border-radius:999px;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px;transition:all .15s ease;}
+  nav.roles button.active{background:var(--accent);color:#181109;}
+  nav.roles button:not(.active):hover{color:var(--text);}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7;}
+
+  .status-pill{font-family:var(--mono);font-size:11px;color:var(--safe);border:1px solid rgba(45,212,167,0.35);background:rgba(45,212,167,0.08);padding:6px 10px;border-radius:999px;display:flex;align-items:center;gap:6px;}
+  .status-pill .blip{width:6px;height:6px;border-radius:50%;background:var(--safe);box-shadow:0 0 0 0 rgba(45,212,167,.6);animation:pulse 2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(45,212,167,.55);}70%{box-shadow:0 0 0 8px rgba(45,212,167,0);}100%{box-shadow:0 0 0 0 rgba(45,212,167,0);}}
+
+  .view{display:none;animation:fadein .25s ease;}
+  .view.active{display:block;}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;}
+  .panel + .panel{margin-top:18px;}
+  .grid-2{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media(max-width:920px){.grid-2{grid-template-columns:1fr;}.grid-3{grid-template-columns:1fr 1fr;}}
+  h2.section-title{font-family:var(--display);font-size:15px;text-transform:uppercase;letter-spacing:1.2px;color:var(--accent-2);margin:0 0 14px;display:flex;align-items:center;gap:9px;}
+  h2.section-title .num{font-family:var(--mono);color:var(--muted);font-size:12px;}
+  p.hint{color:var(--muted);font-size:12.5px;line-height:1.5;margin:4px 0 0;}
+
+  .page-hero{padding:34px 4px 22px;}
+  .page-hero h1{font-family:var(--display);font-size:clamp(26px,3.6vw,38px);margin:0 0 8px;line-height:1.1;}
+  .page-hero p{color:var(--muted);max-width:640px;font-size:14.5px;line-height:1.6;margin:0;}
+
+  .btn{border-radius:10px;padding:10px 16px;font-size:13.5px;font-weight:600;border:1px solid transparent;transition:transform .1s ease, filter .15s ease;}
+  .btn:active{transform:scale(0.98);}
+  .btn-accent{background:var(--accent);color:#191006;}
+  .btn-accent:hover{filter:brightness(1.08);}
+  .btn-outline{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .btn-outline:hover{border-color:var(--accent);}
+  .btn-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line);}
+  .btn-danger{background:var(--danger);color:#1c0507;}
+  .btn-safe{background:var(--safe);color:#04241b;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-sm{padding:6px 11px;font-size:12px;border-radius:8px;}
+  .btn-block{width:100%;}
+
+  input,select,textarea{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);padding:9px 11px;border-radius:9px;font-family:var(--body);font-size:13.5px;outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+  label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px;}
+  .field{margin-bottom:12px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .id-card{position:relative;border-radius:18px;padding:22px;overflow:hidden;background:linear-gradient(135deg,#182548 0%, #0F1830 60%, #1c1030 100%);border:1px solid #2A3A63;}
+  .id-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(115deg, rgba(255,122,41,0.05) 0 2px, transparent 2px 26px);}
+  .id-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;}
+  .id-badge{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;color:var(--accent-2);border:1px solid rgba(255,122,41,0.4);padding:4px 9px;border-radius:999px;background:rgba(255,122,41,0.08);}
+  .id-body{display:grid;grid-template-columns:1fr auto;gap:18px;margin-top:16px;position:relative;align-items:center;}
+  .id-name{font-family:var(--display);font-size:22px;font-weight:600;margin:0;}
+  .id-meta{color:var(--muted);font-size:12.5px;margin-top:3px;}
+  .id-tid{font-family:var(--mono);font-size:15px;color:var(--safe);margin-top:10px;letter-spacing:.5px;}
+  .id-hash{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:10px;word-break:break-all;line-height:1.6;}
+  .qr{width:92px;height:92px;border-radius:8px;background:#fff;padding:6px;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);gap:1px;flex:none;}
+  .qr div{background:#0B1120;}
+  .qr div.off{background:#fff;}
+
+  /* ---- Leaflet map box + dark theme overrides ---- */
+  .map-wrap{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);}
+  .leaflet-box{width:100%;height:380px;background:#0d1526;}
+  .leaflet-container{background:#0d1526;font-family:var(--body);}
+  .leaflet-tooltip.zone-label{background:var(--surface-2);color:var(--text);border:1px solid var(--line);font-family:var(--body);font-size:11.5px;box-shadow:none;border-radius:6px;}
+  .leaflet-tooltip-top.zone-label:before{border-top-color:var(--line);}
+  .leaflet-popup-content-wrapper{background:var(--surface-2);color:var(--text);border-radius:10px;}
+  .leaflet-popup-content{font-family:var(--body);font-size:12.5px;line-height:1.5;}
+  .leaflet-popup-tip{background:var(--surface-2);}
+  .leaflet-control-zoom a{background:var(--surface-2) !important;color:var(--text) !important;border-color:var(--line) !important;}
+  .leaflet-control-zoom a:hover{background:var(--accent) !important;color:#191006 !important;}
+  .leaflet-control-attribution{background:rgba(11,17,32,.75) !important;color:var(--muted) !important;font-size:9.5px !important;}
+  .leaflet-control-attribution a{color:var(--accent-2) !important;}
+  .map-crosshair .leaflet-container{cursor:crosshair;}
+  /* Keep Leaflet's internal panes/controls scoped inside their own box, never above header/toasts/modal */
+  .map-wrap{isolation:isolate;z-index:0;}
+  .map-wrap .leaflet-top,.map-wrap .leaflet-bottom{z-index:8;}
+  .map-wrap .leaflet-control{z-index:8;}
+  .map-wrap .leaflet-popup-pane{z-index:7;}
+
+  .pulse-dot{width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid #0B1120;box-shadow:0 0 0 0 rgba(255,122,41,.6);animation:pulseDotA 1.8s infinite;}
+  .pulse-dot.blue{background:#5B8CFF;animation-name:pulseDotB;}
+  .pulse-dot.red{background:var(--danger);animation-name:pulseDotC;width:18px;height:18px;}
+  @keyframes pulseDotA{0%{box-shadow:0 0 0 0 rgba(255,122,41,.55);}70%{box-shadow:0 0 0 14px rgba(255,122,41,0);}100%{box-shadow:0 0 0 0 rgba(255,122,41,0);}}
+  @keyframes pulseDotB{0%{box-shadow:0 0 0 0 rgba(91,140,255,.55);}70%{box-shadow:0 0 0 14px rgba(91,140,255,0);}100%{box-shadow:0 0 0 0 rgba(91,140,255,0);}}
+  @keyframes pulseDotC{0%{box-shadow:0 0 0 0 rgba(255,71,87,.6);}70%{box-shadow:0 0 0 16px rgba(255,71,87,0);}100%{box-shadow:0 0 0 0 rgba(255,71,87,0);}}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--muted);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  #toasts{position:fixed;top:80px;right:20px;z-index:200;display:flex;flex-direction:column;gap:10px;max-width:340px;}
+  .toast{background:var(--surface-2);border:1px solid var(--line);border-left:4px solid var(--accent);padding:12px 14px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slidein .2s ease;}
+  .toast.warn{border-left-color:var(--caution);}
+  .toast.danger{border-left-color:var(--danger);}
+  .toast.safe{border-left-color:var(--safe);}
+  .toast b{display:block;margin-bottom:2px;font-family:var(--display);}
+  @keyframes slidein{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(4,7,16,0.72);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:300;padding:20px;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px;width:100%;max-width:420px;text-align:center;}
+  .modal.emergency{border-color:rgba(255,71,87,0.5);box-shadow:0 0 0 6px rgba(255,71,87,0.08);}
+  .ring{width:100px;height:100px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;background:conic-gradient(var(--danger) calc(var(--pct)*1%), #22304f 0);}
+  .ring::before{content:'';position:absolute;inset:8px;border-radius:50%;background:var(--surface);}
+  .ring span{position:relative;font-family:var(--mono);font-size:26px;font-weight:600;}
+  .modal h3{font-family:var(--display);font-size:19px;margin:4px 0 6px;}
+  .modal p{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 18px;}
+  .modal-actions{display:flex;gap:10px;flex-direction:column;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--line);}
+  td{padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+  .badge.high, .badge.SOS, .badge.ACCIDENT, .badge.VOICE_DISTRESS{background:rgba(255,71,87,.15);color:var(--danger-2);}
+  .badge.medium, .badge.GEOFENCE{background:rgba(255,207,86,.15);color:var(--caution);}
+  .badge.low, .badge.new{background:rgba(255,122,41,.15);color:var(--accent-2);}
+  .badge.resolved, .badge.Closed{background:rgba(45,212,167,.15);color:var(--safe);}
+  .badge.ack{background:rgba(138,147,166,.18);color:var(--muted);}
+
+  .alert-item{border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:10px;background:var(--surface-2);cursor:pointer;transition:border-color .15s;}
+  .alert-item:hover{border-color:var(--accent);}
+  .alert-item.selected{border-color:var(--accent);background:#1c2947;}
+  .alert-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .alert-top strong{font-size:13.5px;}
+  .alert-sub{color:var(--muted);font-size:11.5px;margin-top:4px;font-family:var(--mono);}
+
+  .stat-card{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:16px;}
+  .stat-num{font-family:var(--display);font-size:28px;font-weight:700;}
+  .stat-label{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;margin-top:2px;}
+
+  .chain{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 14px;}
+  .block{flex:none;width:230px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px;position:relative;}
+  .block::after{content:'⛓';position:absolute;right:-18px;top:50%;transform:translateY(-50%);color:var(--line);font-size:14px;}
+  .block:last-child::after{display:none;}
+  .block .bi{font-family:var(--mono);font-size:10.5px;color:var(--accent-2);}
+  .block h4{font-family:var(--display);font-size:13.5px;margin:6px 0;}
+  .block .h{font-family:var(--mono);font-size:10px;color:var(--muted);word-break:break-all;line-height:1.5;}
+  .block .h b{color:var(--safe);}
+
+  .mono{font-family:var(--mono);}
+  .flex{display:flex;align-items:center;}
+  .between{justify-content:space-between;}
+  .gap8{gap:8px;}
+  .mt10{margin-top:10px;}
+  .mt16{margin-top:16px;}
+  .small{font-size:12px;color:var(--muted);}
+  hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0;}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:30px 10px;}
+  footer.foot{text-align:center;color:var(--muted);font-size:11.5px;padding:30px 0 10px;font-family:var(--mono);}
+  footer.foot button{margin-top:8px;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+        <path d="M20 2L35 8V19C35 28.5 28.7 34.6 20 38C11.3 34.6 5 28.5 5 19V8L20 2Z" fill="#FF7A29" opacity="0.15"/>
+        <path d="M20 4L33 9.2V19C33 27.4 27.4 32.8 20 35.9C12.6 32.8 7 27.4 7 19V9.2L20 4Z" stroke="#FF7A29" stroke-width="2"/>
+        <circle cx="20" cy="18" r="4.2" stroke="#2DD4A7" stroke-width="2"/>
+        <path d="M20 22.5V27" stroke="#2DD4A7" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="brand-name">Kavach</div>
+        <div class="brand-sub">Tourist App</div>
+      </div>
+    </div>
+    <nav class="roles" id="roleNav">
+      <button data-role="tourist" class="active"><span class="dot"></span>Tourist App</button>
+    </nav>
+    <div class="status-pill"><span class="blip"></span> <span id="clock">--:--:--</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ================= TOURIST VIEW ================= -->
+  <section class="view active" id="view-tourist">
+    <div class="page-hero">
+      <h1>Your journey, watched over.</h1>
+      <p>Your blockchain-verified digital ID, live GPS geofence warnings, and one-tap SOS — all on a real map. Turn on live GPS to track your actual position, or drag your marker to demo a zone entry.</p>
+    </div>
+
+    <div class="panel">
+      <div class="flex between" style="margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+        <h2 class="section-title" style="margin:0;"><span class="num">01</span> Digital Identity</h2>
+        <select id="touristSelect" style="width:auto;min-width:220px;"></select>
+      </div>
+      <div id="idCard"></div>
+    </div>
+
+    <div class="panel mt16" id="addTouristIdPanel">
+      <h2 class="section-title"><span class="num">02</span> Add / Register Tourist ID</h2>
+      <p class="hint" style="margin:-6px 0 14px;">Enter trip details to generate a new blockchain-verified digital tourist ID with QR code.</p>
+      <div id="registerForm"></div>
+    </div>
+
+    <div class="grid-2 mt16">
+      <div class="panel">
+        <h2 class="section-title"><span class="num">03</span> Live Location &amp; Geo-Fencing</h2>
+        <div class="map-wrap"><div class="leaflet-box" id="touristMapEl"></div></div>
+        <div class="legend">
+          <span><i style="background:#2DD4A7"></i> Safe zone</span>
+          <span><i style="background:#FFCF56"></i> Caution zone</span>
+          <span><i style="background:#FF4757"></i> Restricted / high risk</span>
+          <span><i style="background:#FF7A29"></i> You</span>
+        </div>
+        <div class="flex gap8 mt10" style="flex-wrap:wrap;">
+          <button class="btn btn-accent btn-sm" id="btnGPS">📍 Use my live GPS</button>
+          <button class="btn btn-outline btn-sm" id="btnCenterMe">Center on me</button>
+        </div>
+        <p class="hint" id="gpsStatus">GPS tracking is off — drag your marker on the map to simulate movement, or turn on live GPS above.</p>
+      </div>
+
+      <div class="panel">
+        <h2 class="section-title"><span class="num">04</span> Emergency Actions</h2>
+        <button class="btn btn-danger btn-block" id="btnSOS" style="padding:18px;font-size:16px;">🆘 SOS — Send Emergency Alert</button>
+        <p class="hint" style="text-align:center;">Sends live location + your ID to Police Command and nearby registered tourists.</p>
+        <div class="grid-3" style="grid-template-columns:1fr 1fr;margin-top:14px;">
+          <button class="btn btn-ghost" id="btnAccident">🚧 Report Accident</button>
+          <button class="btn btn-ghost" id="btnVoice">🎙️ Enable Voice Monitoring</button>
+        </div>
+        <button class="btn btn-outline btn-sm btn-block mt10" id="btnSimScream">Simulate distress sound (demo)</button>
+        <div id="voiceStatus" class="small mt10"></div>
+        <button class="btn btn-ghost btn-block mt10" id="btnFileFIR">📝 File e-FIR yourself</button>
+        <div id="touristFirInline"></div>
+        <hr class="sep">
+        <div class="flex between"><h2 class="section-title" style="margin:0;"><span class="num">05</span> My Alert History</h2></div>
+        <div id="myAlerts"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= POLICE VIEW ================= -->
+  <section class="view" id="view-police">
+    <div class="page-hero">
+      <h1>Command &amp; response console.</h1>
+      <p>Live GPS positions, alerts, danger-zone management and e-FIR filing for the field response team, on a real map.</p>
+    </div>
+
+    <div class="grid-3" id="statCards"></div>
+
+    <div class="grid-2 mt16">
+      <div class="panel">
+        <h2 class="section-title"><span class="num">01</span> Live Operations Map</h2>
+        <div class="map-wrap" id="policeMapWrap"><div class="leaflet-box" id="policeMapEl"></div></div>
+        <div class="flex between mt10" style="flex-wrap:wrap;gap:10px;">
+          <div class="legend" style="margin:0;">
+            <span><i style="background:#2DD4A7"></i> Safe</span>
+            <span><i style="background:#FFCF56"></i> Caution</span>
+            <span><i style="background:#FF4757"></i> Restricted</span>
+            <span><i style="background:#5B8CFF"></i> Tourist</span>
+          </div>
+          <button class="btn btn-accent btn-sm" id="btnAddZone">+ Add Danger Zone</button>
+        </div>
+        <div id="zoneForm" style="display:none;margin-top:14px;"></div>
+        <p class="hint" id="mapClickHint" style="display:none;">Click anywhere on the map to place the new zone at that GPS location.</p>
+      </div>
+
+      <div class="panel">
+        <h2 class="section-title"><span class="num">02</span> Live Alert Feed</h2>
+        <div id="alertFeed"></div>
+      </div>
+    </div>
+
+    <div class="panel mt16" id="alertDetailPanel" style="display:none;"></div>
+
+    <div class="grid-2 mt16">
+      <div class="panel">
+        <h2 class="section-title"><span class="num">03</span> Danger Zones</h2>
+        <div id="zoneList"></div>
+      </div>
+      <div class="panel">
+        <h2 class="section-title"><span class="num">04</span> e-FIR Management</h2>
+        <div id="firList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LEDGER VIEW ================= -->
+  <section class="view" id="view-ledger">
+    <div class="page-hero">
+      <h1>Tamper-proof incident ledger.</h1>
+      <p>Every digital ID issuance, SOS alert and e-FIR is hashed and chained — so records can be verified, never quietly edited.</p>
+    </div>
+
+    <div class="panel">
+      <div class="flex between" style="flex-wrap:wrap;gap:10px;">
+        <h2 class="section-title" style="margin:0;"><span class="num">01</span> Verify a Tourist ID</h2>
+        <div class="flex gap8">
+          <input id="ledgerSearch" placeholder="e.g. TID-A1B2C3" style="width:200px;">
+          <button class="btn btn-accent btn-sm" id="btnVerify">Verify</button>
+        </div>
+      </div>
+      <div id="verifyResult" class="mt10"></div>
+    </div>
+
+    <div class="panel mt16">
+      <div class="flex between" style="flex-wrap:wrap;gap:10px;">
+        <h2 class="section-title" style="margin:0;"><span class="num">02</span> Chain of Blocks <span class="small" id="chainCount"></span></h2>
+        <button class="btn btn-outline btn-sm" id="btnCheckChain">Verify chain integrity</button>
+      </div>
+      <div id="chainIntegrity" class="small mt10"></div>
+      <div class="chain" id="chainView"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    KAVACH — SIH prototype · Real OpenStreetMap tiles + live GPS · Simulated blockchain hash-chain (client-side demo, not production crypto)
+    <br><button class="btn btn-outline btn-sm" id="btnReset">Reset demo data</button>
+  </footer>
+</div>
+
+<div id="toasts"></div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal emergency" id="modalBox">
+    <div class="ring" id="ring" style="--pct:0"><span id="ringNum">8</span></div>
+    <h3 id="modalTitle">Emergency detected</h3>
+    <p id="modalDesc">Sending your live location to Police Command and nearby tourists.</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btnSendNow">Send SOS now</button>
+      <button class="btn btn-safe" id="btnCancelAlert">I'm safe — cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================= UTILITIES ============================= */
+function cyrb53(str, seed=0){
+  let h1=0xdeadbeef^seed, h2=0x41c6ce57^seed;
+  for(let i=0,ch;i<str.length;i++){
+    ch=str.charCodeAt(i);
+    h1=Math.imul(h1^ch,2654435761); h2=Math.imul(h2^ch,1597334677);
+  }
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+  h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return (h2>>>0).toString(16).padStart(8,'0')+(h1>>>0).toString(16).padStart(8,'0');
+}
+function uid(prefix){return prefix+'-'+cyrb53(prefix+Date.now()+Math.random()).slice(0,6).toUpperCase();}
+function nowISO(){return new Date().toISOString();}
+function timeAgo(iso){
+  const s=Math.floor((Date.now()-new Date(iso).getTime())/1000);
+  if(s<5)return 'just now'; if(s<60)return s+'s ago';
+  const m=Math.floor(s/60); if(m<60)return m+'m ago';
+  const h=Math.floor(m/60); if(h<24)return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
+function distMeters(lat1,lng1,lat2,lng2){
+  const R=6371000, toRad=d=>d*Math.PI/180;
+  const dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(Math.min(1,a)));
+}
+function offsetLatLng(lat,lng,dNorthM,dEastM){
+  const dLat = dNorthM/111320;
+  const dLng = dEastM/(111320*Math.cos(lat*Math.PI/180));
+  return {lat:lat+dLat, lng:lng+dLng};
+}
+function toast(title,msg,kind='accent'){
+  const el=document.createElement('div');
+  el.className='toast '+kind;
+  el.innerHTML=`<b>${title}</b>${msg}`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),300);},5200);
+}
+function qrGrid(seedStr){
+  let cells=[]; let h=cyrb53(seedStr);
+  for(let i=0;i<81;i++){
+    const bit=(parseInt(h[i%h.length],16) + i*7) % 2;
+    cells.push(bit);
+  }
+  const on=[0,1,2,9,10,11,18,19,20, 6,7,8,15,16,17,24,25,26, 54,55,56,63,64,65,72,73,74];
+  on.forEach(i=>cells[i]=0);
+  return cells.map(b=>`<div class="${b? '':'off'}"></div>`).join('');
+}
+function zoneColor(risk){ return risk==='high'?'#FF4757':risk==='medium'?'#FFCF56':'#2DD4A7'; }
+function labelFor(type){
+  return {SOS:'Emergency SOS sent', ACCIDENT:'Accident reported', VOICE_DISTRESS:'Distress voice detected', GEOFENCE:'Geofence warning'}[type]||type;
+}
+
+/* ============================= STATE ============================= */
+let db = { tourists:[], alerts:[], firs:[], zones:[], chain:[] };
+let currentTouristId = null;
+let selectedAlertId = null;
+let addingZonePending = null; // {lat,lng}
+let zoneAddMode = false;
+let voiceMonitoring = false;
+let audioCtx=null, analyser=null, micStream=null, monitorRAF=null;
+let lastZoneInside = {}; // touristId -> zoneId currently inside
+let pendingModalAction = null;
+let countdownTimer = null;
+let mapCenter = {lat:10.0889503, lng:77.0596104}; // fallback: Munnar, Kerala
+let gpsWatchId=null, gpsTracking=false;
+
+const STORAGE_KEY='kavach_db_v2';
+
+function addBlock(type,data){
+  const prev = db.chain.length? db.chain[db.chain.length-1].hash : '0'.repeat(16);
+  const block = { index: db.chain.length, timestamp: nowISO(), type, data, prevHash: prev };
+  block.hash = cyrb53(prev+JSON.stringify(data)+block.timestamp+type)+cyrb53(prev+type);
+  db.chain.push(block);
+  return block;
+}
+
+function registerTourist(t,silent){
+  const touristId = uid('TID');
+  const record = { touristId, ...t, registeredAt: nowISO() };
+  const block = addBlock('ID_ISSUED',{touristId,name:t.name,nationality:t.nationality,itinerary:t.itinerary});
+  record.idHash = block.hash;
+  db.tourists.push(record);
+  if(!silent) saveDB();
+  return record;
+}
+function addZone(z,silent){
+  const zone = { id: uid('ZN'), addedAt: nowISO(), ...z };
+  addBlock('ZONE_ADDED',{id:zone.id,name:zone.name,risk:zone.risk});
+  db.zones.push(zone);
+  if(!silent) saveDB();
+  return zone;
+}
+
+function seed(center){
+  db = { tourists:[], alerts:[], firs:[], zones:[], chain:[] };
+  addBlock('GENESIS',{note:'Kavach ledger initialized'});
+
+  const you = registerTourist({name:'Aditi Rao', nationality:'Indian', phone:'+91 98450 xxxxx', emergency:'+91 90210 xxxxx',
+    itinerary:'Nilgiri Trail — Day trek', tripStart:'2026-08-17', tripEnd:'2026-08-22', lat:center.lat, lng:center.lng}, true);
+  currentTouristId = you.touristId;
+
+  const o1=offsetLatLng(center.lat,center.lng,180,-260);
+  registerTourist({name:'Marcus Webb', nationality:'British', phone:'+44 7700 xxxxxx', emergency:'+44 7900 xxxxxx',
+    itinerary:'Tea Estate Circuit', tripStart:'2026-08-16', tripEnd:'2026-08-20', lat:o1.lat, lng:o1.lng}, true);
+
+  const o2=offsetLatLng(center.lat,center.lng,-320,420);
+  registerTourist({name:'Fathima Noor', nationality:'Indian', phone:'+91 99000 xxxxx', emergency:'+91 98100 xxxxx',
+    itinerary:'Riverbed Photography Tour', tripStart:'2026-08-18', tripEnd:'2026-08-21', lat:o2.lat, lng:o2.lng}, true);
+
+  const z1=offsetLatLng(center.lat,center.lng,260,-300);
+  addZone({name:'Eravikulam Restricted Core', risk:'high', lat:z1.lat, lng:z1.lng, radius:220, reason:'Wildlife sanctuary core zone — no entry after dusk'},true);
+  const z2=offsetLatLng(center.lat,center.lng,-180,340);
+  addZone({name:'Cliffside Viewpoint', risk:'medium', lat:z2.lat, lng:z2.lng, radius:150, reason:'Unstable ledge, frequent slips reported'},true);
+  const z3=offsetLatLng(center.lat,center.lng,-420,-160);
+  addZone({name:'Riverbed Crossing', risk:'medium', lat:z3.lat, lng:z3.lng, radius:170, reason:'Flash-flood risk during monsoon season'},true);
+
+  saveDB();
+}
+
+async function loadDB(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ db = JSON.parse(raw); return true; }
+  }catch(e){ /* not found or error -> seed fresh */ }
+  return false;
+}
+async function saveDB(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+  catch(e){ console.error('storage save failed', e); }
+}
+function getInitialPosition(){
+  return new Promise(resolve=>{
+    if(!navigator.geolocation){ resolve(null); return; }
+    const timer=setTimeout(()=>resolve(null),6000);
+    navigator.geolocation.getCurrentPosition(
+      pos=>{ clearTimeout(timer); resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}); },
+      ()=>{ clearTimeout(timer); resolve(null); },
+      {enableHighAccuracy:true,timeout:5000}
+    );
+  });
+}
+
+/* ============================= ROLE NAV ============================= */
+document.getElementById('roleNav').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-role]'); if(!btn) return;
+  document.querySelectorAll('nav.roles button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+btn.dataset.role).classList.add('active');
+  renderAll();
+  setTimeout(()=>{
+    if(btn.dataset.role==='tourist' && touristMapObj) touristMapObj.invalidateSize();
+    if(btn.dataset.role==='police' && policeMapObj) policeMapObj.invalidateSize();
+  },60);
+});
+window.addEventListener('resize',()=>{
+  if(touristMapObj) touristMapObj.invalidateSize();
+  if(policeMapObj) policeMapObj.invalidateSize();
+});
+
+/* ============================= TOURIST VIEW ============================= */
+function currentTourist(){ return db.tourists.find(t=>t.touristId===currentTouristId); }
+
+function renderTouristSelect(){
+  const sel=document.getElementById('touristSelect');
+  sel.innerHTML = db.tourists.map(t=>`<option value="${t.touristId}" ${t.touristId===currentTouristId?'selected':''}>${t.name} · ${t.touristId}</option>`).join('');
+}
+document.getElementById('touristSelect').addEventListener('change',e=>{
+  currentTouristId=e.target.value; lastCenteredTourist=null; renderTourist(); renderPolice();
+});
+
+function renderIdCard(){
+  const t=currentTourist(); if(!t) return;
+  document.getElementById('idCard').innerHTML=`
+    <div class="id-card">
+      <div class="id-top">
+        <span class="id-badge">KAVACH DIGITAL ID · BLOCKCHAIN VERIFIED</span>
+        <span class="id-badge" style="color:var(--safe);border-color:rgba(45,212,167,.4);background:rgba(45,212,167,.08);">ACTIVE</span>
+      </div>
+      <div class="id-body">
+        <div>
+          <p class="id-name">${t.name}</p>
+          <div class="id-meta">${t.nationality} · Itinerary: ${t.itinerary}</div>
+          <div class="id-meta">Trip: ${t.tripStart} → ${t.tripEnd} · Emergency contact: ${t.emergency}</div>
+          <div class="id-tid">${t.touristId}</div>
+          <div class="id-hash">chain hash&nbsp;&nbsp;<b>${t.idHash}</b></div>
+        </div>
+        <div class="qr">${qrGrid(t.idHash)}</div>
+      </div>
+    </div>`;
+}
+
+function renderRegisterForm(){
+  document.getElementById('registerForm').innerHTML=`
+    <div class="field-row">
+      <div class="field"><label>Full name</label><input id="rf_name" placeholder="Jane Doe"></div>
+      <div class="field"><label>Nationality</label><input id="rf_nat" placeholder="Indian"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Phone</label><input id="rf_phone" placeholder="+91 ..."></div>
+      <div class="field"><label>Emergency contact</label><input id="rf_em" placeholder="+91 ..."></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Trip start</label><input id="rf_start" type="date"></div>
+      <div class="field"><label>Trip end</label><input id="rf_end" type="date"></div>
+    </div>
+    <div class="field"><label>Itinerary</label><input id="rf_it" placeholder="e.g. Munnar hill trek"></div>
+    <button class="btn btn-accent btn-block" id="rf_submit">Generate blockchain Digital ID</button>`;
+  document.getElementById('rf_submit').onclick=()=>{
+    const name=document.getElementById('rf_name').value.trim();
+    if(!name){toast('Missing name',"Please enter the tourist's name.",'danger');return;}
+    const base = currentTourist() || {lat:mapCenter.lat,lng:mapCenter.lng};
+    const jitter = offsetLatLng(base.lat, base.lng, (Math.random()-0.5)*200, (Math.random()-0.5)*200);
+    const rec=registerTourist({
+      name, nationality:document.getElementById('rf_nat').value||'—',
+      phone:document.getElementById('rf_phone').value||'—',
+      emergency:document.getElementById('rf_em').value||'—',
+      tripStart:document.getElementById('rf_start').value||'—',
+      tripEnd:document.getElementById('rf_end').value||'—',
+      itinerary:document.getElementById('rf_it').value||'—',
+      lat: jitter.lat, lng: jitter.lng
+    });
+    currentTouristId=rec.touristId; lastCenteredTourist=null;
+    saveDB(); renderAll(); renderRegisterForm();
+    toast('Digital ID issued', `${name} now has ID ${rec.touristId}, anchored to the chain.`,'safe');
+  };
+}
+renderRegisterForm();
+
+/* ---- Leaflet: tourist map ---- */
+let touristMapObj=null, touristZoneLayer=null, touristSelfMarker=null, lastCenteredTourist=null;
+
+function ensureTouristMap(){
+  if(touristMapObj) return;
+  touristMapObj = L.map('touristMapEl',{scrollWheelZoom:true}).setView([mapCenter.lat,mapCenter.lng],15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19, attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(touristMapObj);
+  touristZoneLayer = L.layerGroup().addTo(touristMapObj);
+  setTimeout(()=>touristMapObj&&touristMapObj.invalidateSize(),0);
+}
+function updateZoneLayer(layerGroup){
+  layerGroup.clearLayers();
+  db.zones.forEach(z=>{
+    const color=zoneColor(z.risk);
+    const circle=L.circle([z.lat,z.lng],{radius:z.radius,color,weight:1.5,fillColor:color,fillOpacity:0.14,dashArray:'5,4'});
+    circle.bindTooltip(`${z.name} · ${z.risk} risk`, {direction:'top', className:'zone-label'});
+    circle.addTo(layerGroup);
+  });
+}
+function renderTouristMap(){
+  if(!document.getElementById('view-tourist').classList.contains('active')) return;
+  ensureTouristMap();
+  const t=currentTourist(); if(!t) return;
+  if(lastCenteredTourist!==t.touristId){
+    touristMapObj.setView([t.lat,t.lng],15,{animate:false});
+    lastCenteredTourist=t.touristId;
+  }
+  updateZoneLayer(touristZoneLayer);
+  const icon=L.divIcon({className:'', html:'<div class="pulse-dot"></div>', iconSize:[16,16], iconAnchor:[8,8]});
+  if(!touristSelfMarker){
+    touristSelfMarker=L.marker([t.lat,t.lng],{icon,draggable:true}).addTo(touristMapObj);
+    touristSelfMarker.bindTooltip('YOU · '+t.name,{permanent:true,direction:'top',offset:[0,-10],className:'zone-label'});
+    touristSelfMarker.on('dragend',()=>{
+      const p=touristSelfMarker.getLatLng();
+      const tt=currentTourist(); tt.lat=p.lat; tt.lng=p.lng;
+      saveDB(); checkGeofence(tt);
+      if(policeMapObj) renderPoliceMap();
+    });
+  } else {
+    touristSelfMarker.setIcon(icon);
+    touristSelfMarker.setLatLng([t.lat,t.lng]);
+    touristSelfMarker.setTooltipContent('YOU · '+t.name);
+  }
+}
+
+document.getElementById('btnCenterMe').onclick=()=>{
+  const t=currentTourist(); if(!t||!touristMapObj) return;
+  touristMapObj.setView([t.lat,t.lng],16);
+};
+
+document.getElementById('btnGPS').onclick=()=>{
+  const btn=document.getElementById('btnGPS'); const status=document.getElementById('gpsStatus');
+  if(gpsTracking){
+    navigator.geolocation.clearWatch(gpsWatchId); gpsTracking=false;
+    btn.textContent='📍 Use my live GPS';
+    status.textContent='GPS tracking is off — drag your marker to simulate movement.';
+    return;
+  }
+  if(!navigator.geolocation){ toast('GPS unavailable','Geolocation is not supported in this browser.','warn'); return; }
+  status.textContent='Requesting GPS permission...';
+  gpsWatchId = navigator.geolocation.watchPosition(pos=>{
+    const t=currentTourist(); if(!t) return;
+    t.lat=pos.coords.latitude; t.lng=pos.coords.longitude;
+    saveDB(); renderTouristMap(); checkGeofence(t);
+    if(policeMapObj) renderPoliceMap();
+    status.textContent=`Live GPS tracking — accuracy ±${Math.round(pos.coords.accuracy)}m, updated ${new Date().toLocaleTimeString()}.`;
+  }, err=>{
+    status.textContent='GPS error: '+err.message+' — falling back to manual drag.';
+    toast('GPS error', err.message,'warn');
+    gpsTracking=false; btn.textContent='📍 Use my live GPS';
+  }, {enableHighAccuracy:true, maximumAge:2000, timeout:12000});
+  gpsTracking=true; btn.textContent='⏹ Stop live GPS';
+};
+
+function checkGeofence(t){
+  let inside=null;
+  for(const z of db.zones){
+    if(distMeters(t.lat,t.lng,z.lat,z.lng) <= z.radius){ inside=z; break; }
+  }
+  const wasInside = lastZoneInside[t.touristId];
+  if(inside && (!wasInside || wasInside!==inside.id)){
+    lastZoneInside[t.touristId]=inside.id;
+    const alert={ id:uid('AL'), type:'GEOFENCE', touristId:t.touristId, name:t.name, risk:inside.risk,
+      zone:inside.name, lat:t.lat, lng:t.lng, status:'info', timestamp:nowISO() };
+    db.alerts.unshift(alert);
+    addBlock('GEOFENCE_ALERT',{touristId:t.touristId, zone:inside.name, risk:inside.risk});
+    saveDB();
+    toast(inside.risk==='high'?'⚠ Entering restricted zone':'⚠ Entering caution zone',
+      `${inside.name} — ${inside.reason}`, inside.risk==='high'?'danger':'warn');
+    if(document.getElementById('view-police').classList.contains('active')) renderPolice();
+  } else if(!inside && wasInside){
+    delete lastZoneInside[t.touristId];
+  }
+}
+
+function renderMyAlerts(){
+  const t=currentTourist(); if(!t) return;
+  const mine = db.alerts.filter(a=>a.touristId===t.touristId).slice(0,6);
+  const box=document.getElementById('myAlerts');
+  if(!mine.length){ box.innerHTML='<div class="empty">No alerts yet — you\'re all clear.</div>'; return; }
+  box.innerHTML = mine.map(a=>`
+    <div class="alert-item" style="cursor:default;">
+      <div class="alert-top"><strong>${labelFor(a.type)}</strong><span class="badge ${a.type}">${a.type.replace('_',' ')}</span></div>
+      <div class="alert-sub">${timeAgo(a.timestamp)} · ${a.zone?('near '+a.zone):(a.lat.toFixed(5)+', '+a.lng.toFixed(5))} · status: ${a.status}</div>
+    </div>`).join('');
+}
+
+/* ---- Emergency modal flow ---- */
+function openEmergencyModal(type){
+  const titles={ SOS:'Sending SOS', ACCIDENT:'Accident reported', VOICE_DISTRESS:'Distress sound detected'};
+  const descs={
+    SOS:'Your live location and Digital ID will be sent to Police Command and nearby registered tourists.',
+    ACCIDENT:"We'll alert Police Command with your exact location. Cancel if this was a mistake.",
+    VOICE_DISTRESS:'A loud, scream-like sound was detected. Confirming will alert Police Command immediately.'
+  };
+  document.getElementById('modalTitle').textContent = titles[type];
+  document.getElementById('modalDesc').textContent = descs[type];
+  pendingModalAction = type;
+  document.getElementById('modalOverlay').classList.add('show');
+  let secondsLeft=8;
+  const ring=document.getElementById('ring'), num=document.getElementById('ringNum');
+  ring.style.setProperty('--pct',0); num.textContent=secondsLeft;
+  clearInterval(countdownTimer);
+  countdownTimer=setInterval(()=>{
+    secondsLeft--;
+    ring.style.setProperty('--pct', Math.round((8-secondsLeft)/8*100));
+    num.textContent = Math.max(secondsLeft,0);
+    if(secondsLeft<=0){ clearInterval(countdownTimer); finalizeAlert(type); }
+  },1000);
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+  clearInterval(countdownTimer); pendingModalAction=null;
+}
+document.getElementById('btnCancelAlert').onclick=()=>{
+  toast('Alert cancelled',"No message was sent — glad you're safe.",'safe');
+  closeModal();
+};
+document.getElementById('btnSendNow').onclick=()=>{ const t=pendingModalAction; closeModal(); finalizeAlert(t); };
+
+function finalizeAlert(type){
+  const t=currentTourist(); if(!t) return;
+  const nearby = db.tourists.filter(o=>o.touristId!==t.touristId && distMeters(o.lat,o.lng,t.lat,t.lng)<2000);
+  const alert={ id:uid('AL'), type, touristId:t.touristId, name:t.name, lat:t.lat, lng:t.lng,
+    nearby: nearby.map(n=>n.name), status:'new', timestamp:nowISO() };
+  db.alerts.unshift(alert);
+  const block=addBlock('ALERT_TRIGGERED',{alertId:alert.id, touristId:t.touristId, type});
+  alert.chainHash=block.hash;
+  saveDB();
+  toast('🚨 Alert sent to Police Command', nearby.length? `Also notified ${nearby.length} nearby tourist(s): ${nearby.map(n=>n.name).join(', ')}.` : 'No other tourists were within 2km.','danger');
+  renderAll();
+}
+
+document.getElementById('btnSOS').onclick=()=>openEmergencyModal('SOS');
+document.getElementById('btnAccident').onclick=()=>openEmergencyModal('ACCIDENT');
+document.getElementById('btnSimScream').onclick=()=>openEmergencyModal('VOICE_DISTRESS');
+
+/* ---- Tourist self-filed e-FIR ---- */
+let touristFirFormOpen=false;
+function renderTouristFirForm(){
+  const box=document.getElementById('touristFirInline');
+  const t=currentTourist();
+  if(!touristFirFormOpen || !t){ box.innerHTML=''; return; }
+  box.innerHTML=`
+    <hr class="sep">
+    <div class="field"><label>Incident type</label><input id="tfir_type" placeholder="e.g. Theft, Harassment, Lost documents..."></div>
+    <div class="field"><label>Description</label><textarea id="tfir_desc" rows="3" placeholder="What happened, where, and when...">${t.name+' ('+t.touristId+') — self-reported at '+t.lat.toFixed(5)+', '+t.lng.toFixed(5)}</textarea></div>
+    <button class="btn btn-accent" id="tfir_submit">Submit e-FIR</button>`;
+  document.getElementById('tfir_submit').onclick=()=>{
+    const type=document.getElementById('tfir_type').value.trim()||'General complaint';
+    const desc=document.getElementById('tfir_desc').value;
+    const fir={ firId:uid('FIR'), alertId:null, touristId:t.touristId, name:t.name, officer:'Self-filed by tourist',
+      incidentType:type, description:desc, status:'Filed', filedAt:nowISO() };
+    const block=addBlock('FIR_FILED',{firId:fir.firId, touristId:t.touristId, selfFiled:true});
+    fir.chainHash=block.hash;
+    db.firs.unshift(fir);
+    touristFirFormOpen=false;
+    saveDB(); renderAll();
+    toast('e-FIR filed', `${fir.firId} recorded and anchored to the chain. Police Command can now view it.`,'safe');
+  };
+}
+document.getElementById('btnFileFIR').onclick=()=>{
+  touristFirFormOpen=!touristFirFormOpen;
+  renderTouristFirForm();
+};
+
+/* ---- Voice monitoring (real mic amplitude threshold) ---- */
+document.getElementById('btnVoice').onclick=async ()=>{
+  const statusEl=document.getElementById('voiceStatus');
+  const btn=document.getElementById('btnVoice');
+  if(voiceMonitoring){
+    voiceMonitoring=false; btn.textContent='🎙️ Enable Voice Monitoring';
+    if(monitorRAF) cancelAnimationFrame(monitorRAF);
+    if(micStream) micStream.getTracks().forEach(tr=>tr.stop());
+    if(audioCtx) audioCtx.close();
+    statusEl.textContent='Voice monitoring stopped.';
+    return;
+  }
+  try{
+    micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const src = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser(); analyser.fftSize=512;
+    src.connect(analyser);
+    const data = new Uint8Array(analyser.fftSize);
+    voiceMonitoring=true; btn.textContent='⏹ Stop Voice Monitoring';
+    statusEl.textContent='Listening for distress sounds (loud, sharp sounds like screams)...';
+    let highFrames=0;
+    const loop=()=>{
+      if(!voiceMonitoring) return;
+      analyser.getByteTimeDomainData(data);
+      let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
+      const rms=Math.sqrt(sum/data.length);
+      if(rms>0.35){ highFrames++; } else { highFrames=Math.max(0,highFrames-1); }
+      if(highFrames>6 && pendingModalAction===null && !document.getElementById('modalOverlay').classList.contains('show')){
+        highFrames=0;
+        openEmergencyModal('VOICE_DISTRESS');
+      }
+      monitorRAF=requestAnimationFrame(loop);
+    };
+    loop();
+  }catch(e){
+    statusEl.textContent='Microphone access denied — use "Simulate distress sound" instead.';
+    toast('Mic unavailable', 'Could not access microphone in this environment.','warn');
+  }
+};
+
+function renderTourist(){
+  renderTouristSelect(); renderIdCard(); renderTouristMap(); renderMyAlerts(); renderTouristFirForm();
+}
+
+/* ============================= POLICE VIEW ============================= */
+let policeMapObj=null, policeZoneLayer=null, policeTouristLayer=null, policeAlertLayer=null;
+
+function renderStatCards(){
+  const active = db.alerts.filter(a=>a.status!=='resolved' && a.type!=='GEOFENCE').length;
+  const cards=[
+    {n:db.tourists.length,l:'Registered tourists'},
+    {n:active,l:'Active alerts'},
+    {n:db.zones.length,l:'Danger zones'},
+    {n:db.firs.length,l:'e-FIRs filed'},
+  ];
+  document.getElementById('statCards').innerHTML=cards.map(c=>`<div class="stat-card"><div class="stat-num">${c.n}</div><div class="stat-label">${c.l}</div></div>`).join('');
+}
+
+function ensurePoliceMap(){
+  if(policeMapObj) return;
+  policeMapObj = L.map('policeMapEl',{scrollWheelZoom:true}).setView([mapCenter.lat,mapCenter.lng],14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19, attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(policeMapObj);
+  policeZoneLayer = L.layerGroup().addTo(policeMapObj);
+  policeTouristLayer = L.layerGroup().addTo(policeMapObj);
+  policeAlertLayer = L.layerGroup().addTo(policeMapObj);
+  setTimeout(()=>policeMapObj&&policeMapObj.invalidateSize(),0);
+  policeMapObj.on('click',(e)=>{
+    if(!zoneAddMode) return;
+    addingZonePending={lat:e.latlng.lat, lng:e.latlng.lng};
+    renderZoneForm();
+  });
+}
+
+function renderPoliceMap(){
+  if(!document.getElementById('view-police').classList.contains('active')) return;
+  ensurePoliceMap();
+  updateZoneLayer(policeZoneLayer);
+
+  policeTouristLayer.clearLayers();
+  db.tourists.forEach(t=>{
+    const icon=L.divIcon({className:'', html:'<div class="pulse-dot blue"></div>', iconSize:[14,14], iconAnchor:[7,7]});
+    const m=L.marker([t.lat,t.lng],{icon}).addTo(policeTouristLayer);
+    m.bindPopup(`<b>${t.name}</b><br>${t.touristId}<br>${t.lat.toFixed(5)}, ${t.lng.toFixed(5)}`);
+  });
+
+  policeAlertLayer.clearLayers();
+  db.alerts.filter(a=>a.status!=='resolved' && a.type!=='GEOFENCE').forEach(a=>{
+    const icon=L.divIcon({className:'', html:'<div class="pulse-dot red"></div>', iconSize:[18,18], iconAnchor:[9,9]});
+    const m=L.marker([a.lat,a.lng],{icon}).addTo(policeAlertLayer);
+    m.bindPopup(`<b>${a.name}</b> — ${labelFor(a.type)}<br>${timeAgo(a.timestamp)}`);
+  });
+
+  const wrap=document.getElementById('policeMapWrap');
+  wrap.classList.toggle('map-crosshair', zoneAddMode);
+}
+
+document.getElementById('btnAddZone').onclick=()=>{
+  zoneAddMode=!zoneAddMode;
+  document.getElementById('mapClickHint').style.display = zoneAddMode?'block':'none';
+  document.getElementById('btnAddZone').textContent = zoneAddMode? 'Cancel placing' : '+ Add Danger Zone';
+  if(!zoneAddMode){ document.getElementById('zoneForm').style.display='none'; addingZonePending=null; }
+  renderPoliceMap();
+};
+
+function renderZoneForm(){
+  const f=document.getElementById('zoneForm');
+  if(!addingZonePending){ f.style.display='none'; return; }
+  f.style.display='block';
+  f.innerHTML=`
+    <div class="field-row">
+      <div class="field"><label>Zone name</label><input id="zf_name" placeholder="e.g. Landslide Ridge"></div>
+      <div class="field"><label>Risk level</label>
+        <select id="zf_risk"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Reason / advisory</label><input id="zf_reason" placeholder="Why is this zone dangerous?"></div>
+      <div class="field"><label>Radius (meters)</label><input id="zf_radius" type="number" value="180" min="30" max="2000"></div>
+    </div>
+    <div class="flex gap8"><button class="btn btn-accent" id="zf_save">Save zone at ${addingZonePending.lat.toFixed(5)}, ${addingZonePending.lng.toFixed(5)}</button>
+    <button class="btn btn-outline" id="zf_cancel">Cancel</button></div>`;
+  document.getElementById('zf_save').onclick=()=>{
+    const name=document.getElementById('zf_name').value.trim()||'Unnamed zone';
+    const risk=document.getElementById('zf_risk').value;
+    const reason=document.getElementById('zf_reason').value||'Flagged by field command.';
+    const radius=parseInt(document.getElementById('zf_radius').value)||180;
+    addZone({name,risk,lat:addingZonePending.lat,lng:addingZonePending.lng,radius,reason});
+    addingZonePending=null; zoneAddMode=false;
+    document.getElementById('mapClickHint').style.display='none';
+    document.getElementById('btnAddZone').textContent='+ Add Danger Zone';
+    saveDB(); renderAll();
+    toast('Danger zone added', `${name} is now live on all tourist maps.`,'accent');
+  };
+  document.getElementById('zf_cancel').onclick=()=>{ addingZonePending=null; f.style.display='none'; renderPoliceMap(); };
+}
+
+function renderZoneList(){
+  const box=document.getElementById('zoneList');
+  if(!db.zones.length){ box.innerHTML='<div class="empty">No zones yet.</div>'; return; }
+  box.innerHTML = `<table><thead><tr><th>Zone</th><th>Risk</th><th>Radius</th><th>Reason</th></tr></thead><tbody>
+    ${db.zones.map(z=>`<tr><td>${z.name}</td><td><span class="badge ${z.risk}">${z.risk}</span></td><td class="small">${z.radius}m</td><td class="small">${z.reason}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+function renderAlertFeed(){
+  const box=document.getElementById('alertFeed');
+  const list = db.alerts.filter(a=>a.type!=='GEOFENCE').slice(0,15);
+  const geo = db.alerts.filter(a=>a.type==='GEOFENCE').slice(0,4);
+  if(!list.length && !geo.length){ box.innerHTML='<div class="empty">No alerts. All clear.</div>'; return; }
+  box.innerHTML = list.map(a=>`
+    <div class="alert-item ${a.id===selectedAlertId?'selected':''}" data-id="${a.id}">
+      <div class="alert-top"><strong>${a.name}</strong><span class="badge ${a.status==='resolved'?'resolved':a.type}">${a.status==='resolved'?'resolved':a.type.replace('_',' ')}</span></div>
+      <div class="alert-sub">${timeAgo(a.timestamp)} · ${a.lat.toFixed(5)}, ${a.lng.toFixed(5)} ${a.nearby&&a.nearby.length?'· '+a.nearby.length+' nearby tourist(s)':''}</div>
+    </div>`).join('') + (geo.length? `<hr class="sep"><div class="small" style="margin-bottom:8px;">Geofence notices</div>`+geo.map(a=>`<div class="alert-item" style="cursor:default;"><div class="alert-top"><strong>${a.name}</strong><span class="badge ${a.risk}">${a.risk}</span></div><div class="alert-sub">${timeAgo(a.timestamp)} · entered ${a.zone}</div></div>`).join(''):'');
+
+  box.querySelectorAll('.alert-item[data-id]').forEach(el=>{
+    el.onclick=()=>{ selectedAlertId=el.dataset.id; renderAlertFeed(); renderAlertDetail(); };
+  });
+}
+
+function renderAlertDetail(){
+  const panel=document.getElementById('alertDetailPanel');
+  const a = db.alerts.find(x=>x.id===selectedAlertId);
+  if(!a){ panel.style.display='none'; return; }
+  panel.style.display='block';
+  const t = db.tourists.find(x=>x.touristId===a.touristId);
+  panel.innerHTML=`
+    <h2 class="section-title"><span class="num">▶</span> Alert Detail — ${a.name}</h2>
+    <p class="small"><b style="color:var(--text)">${labelFor(a.type)}</b> · ${timeAgo(a.timestamp)} · ${a.lat.toFixed(5)}, ${a.lng.toFixed(5)}</p>
+    <p class="small">Tourist ID: <span class="mono">${a.touristId}</span> ${t? '· ✓ verified on chain ('+t.idHash.slice(0,10)+'…)':''}</p>
+    <p class="small">Nearby tourists notified: ${a.nearby&&a.nearby.length? a.nearby.join(', ') : 'none within 2km'}</p>
+    <p class="small">Status: <span class="badge ${a.status}">${a.status}</span></p>
+    <div class="flex gap8 mt16" style="flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" data-act="ack">Acknowledge</button>
+      <button class="btn btn-ghost btn-sm" data-act="dispatch">Dispatch unit</button>
+      <button class="btn btn-safe btn-sm" data-act="resolve">Mark resolved</button>
+      <button class="btn btn-accent btn-sm" data-act="fir">File e-FIR</button>
+    </div>
+    <div id="firInline" class="mt16"></div>`;
+  panel.querySelectorAll('[data-act]').forEach(btn=>{
+    btn.onclick=()=>{
+      const act=btn.dataset.act;
+      if(act==='ack'){ a.status='acknowledged'; addBlock('ALERT_ACK',{alertId:a.id}); toast('Acknowledged','Dispatch has seen this alert.'); }
+      if(act==='dispatch'){ a.status='dispatched'; addBlock('UNIT_DISPATCHED',{alertId:a.id}); toast('Unit dispatched','Nearest response unit notified.'); }
+      if(act==='resolve'){ a.status='resolved'; addBlock('ALERT_RESOLVED',{alertId:a.id}); toast('Marked resolved','Incident closed out.','safe'); }
+      if(act==='fir'){ renderInlineFirForm(a); return; }
+      saveDB(); renderAll();
+    };
+  });
+}
+
+function renderInlineFirForm(a){
+  const t = db.tourists.find(x=>x.touristId===a.touristId);
+  document.getElementById('firInline').innerHTML=`
+    <hr class="sep">
+    <div class="field-row">
+      <div class="field"><label>Officer name</label><input id="fir_officer" placeholder="Insp. ..."></div>
+      <div class="field"><label>Incident type</label><input id="fir_type" value="${a.type.replace('_',' ')}"></div>
+    </div>
+    <div class="field"><label>Description</label><textarea id="fir_desc" rows="3" placeholder="Details of the incident...">${t? t.name+' ('+t.touristId+') — '+labelFor(a.type)+' at '+a.lat.toFixed(5)+', '+a.lng.toFixed(5) : ''}</textarea></div>
+    <button class="btn btn-accent" id="fir_submit">File e-FIR</button>`;
+  document.getElementById('fir_submit').onclick=()=>{
+    const officer=document.getElementById('fir_officer').value||'Duty officer';
+    const desc=document.getElementById('fir_desc').value;
+    const fir={ firId: uid('FIR'), alertId:a.id, touristId:a.touristId, name:a.name, officer,
+      incidentType:document.getElementById('fir_type').value, description:desc, status:'Filed', filedAt:nowISO() };
+    const block=addBlock('FIR_FILED',{firId:fir.firId, touristId:a.touristId});
+    fir.chainHash=block.hash;
+    db.firs.unshift(fir);
+    a.status='fir filed';
+    saveDB(); renderAll();
+    toast('e-FIR filed', `${fir.firId} recorded and anchored to the chain.`,'safe');
+  };
+}
+
+function renderFirList(){
+  const box=document.getElementById('firList');
+  if(!db.firs.length){ box.innerHTML='<div class="empty">No FIRs filed yet.</div>'; return; }
+  box.innerHTML = `<table><thead><tr><th>FIR</th><th>Tourist</th><th>Type</th><th>Status</th></tr></thead><tbody>
+    ${db.firs.map(f=>`<tr>
+      <td class="mono">${f.firId}</td>
+      <td>${f.name}</td>
+      <td class="small">${f.incidentType}</td>
+      <td>
+        <select data-fir="${f.firId}" style="width:auto;padding:4px 8px;font-size:11.5px;">
+          ${['Filed','Under Investigation','Closed'].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`).join('')}
+  </tbody></table>`;
+  box.querySelectorAll('select[data-fir]').forEach(sel=>{
+    sel.onchange=()=>{
+      const f=db.firs.find(x=>x.firId===sel.dataset.fir); f.status=sel.value;
+      addBlock('FIR_STATUS',{firId:f.firId,status:f.status});
+      saveDB(); toast('FIR updated', `${f.firId} → ${f.status}`);
+    };
+  });
+}
+
+function renderPolice(){
+  renderStatCards(); renderPoliceMap(); renderZoneForm(); renderZoneList();
+  renderAlertFeed(); renderAlertDetail(); renderFirList();
+}
+
+/* ============================= LEDGER VIEW ============================= */
+function renderChain(){
+  document.getElementById('chainCount').textContent = `(${db.chain.length} blocks)`;
+  document.getElementById('chainView').innerHTML = db.chain.slice().reverse().slice(0,40).map(b=>`
+    <div class="block">
+      <div class="bi">#${b.index} · ${b.type}</div>
+      <h4>${blockTitle(b)}</h4>
+      <div class="small mono">${new Date(b.timestamp).toLocaleString()}</div>
+      <div class="h mt10">prev&nbsp;${b.prevHash.slice(0,14)}…<br>hash&nbsp;<b>${b.hash.slice(0,14)}…</b></div>
+    </div>`).join('');
+}
+function blockTitle(b){
+  if(b.type==='GENESIS') return 'Genesis block';
+  if(b.type==='ID_ISSUED') return b.data.name+' · '+b.data.touristId;
+  if(b.type==='ZONE_ADDED') return 'Zone: '+b.data.name;
+  if(b.type==='ALERT_TRIGGERED') return 'Alert '+b.data.type;
+  if(b.type==='GEOFENCE_ALERT') return 'Geofence: '+b.data.zone;
+  if(b.type==='FIR_FILED') return 'e-FIR '+b.data.firId;
+  if(b.type==='ALERT_ACK') return 'Alert acknowledged';
+  if(b.type==='UNIT_DISPATCHED') return 'Unit dispatched';
+  if(b.type==='ALERT_RESOLVED') return 'Alert resolved';
+  if(b.type==='FIR_STATUS') return 'FIR status update';
+  return b.type;
+}
+document.getElementById('btnVerify').onclick=()=>{
+  const q=document.getElementById('ledgerSearch').value.trim().toUpperCase();
+  const box=document.getElementById('verifyResult');
+  const t=db.tourists.find(x=>x.touristId.toUpperCase()===q);
+  if(!t){ box.innerHTML=`<div class="empty">No tourist found for "${q}".</div>`; return; }
+  box.innerHTML=`<div class="alert-item" style="cursor:default;">
+    <div class="alert-top"><strong>${t.name}</strong><span class="badge resolved">✓ verified</span></div>
+    <div class="alert-sub">${t.touristId} · issued ${new Date(t.registeredAt).toLocaleString()}</div>
+    <div class="small mono mt10">hash ${t.idHash}</div>
+  </div>`;
+};
+document.getElementById('btnCheckChain').onclick=()=>{
+  let ok=true;
+  for(let i=1;i<db.chain.length;i++){ if(db.chain[i].prevHash!==db.chain[i-1].hash){ ok=false; break; } }
+  document.getElementById('chainIntegrity').innerHTML = ok
+    ? `<span style="color:var(--safe)">✓ Chain verified — all ${db.chain.length} blocks are correctly linked, no tampering detected.</span>`
+    : `<span style="color:var(--danger)">✗ Chain broken — a record may have been tampered with.</span>`;
+};
+
+/* ============================= GLOBAL RENDER ============================= */
+function renderAll(){
+  renderTourist(); renderPolice(); renderChain();
+}
+
+/* ============================= INIT ============================= */
+document.getElementById('btnReset').onclick=async()=>{
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  const pos = await getInitialPosition();
+  mapCenter = pos || mapCenter;
+  lastCenteredTourist=null;
+  seed(mapCenter); await saveDB(); renderAll();
+  toast('Demo data reset','Fresh seeded tourists, zones and ledger loaded.');
+};
+
+function tickClock(){ document.getElementById('clock').textContent = new Date().toLocaleTimeString(); }
+setInterval(tickClock,1000); tickClock();
+setInterval(()=>{ renderMyAlerts(); if(document.getElementById('view-police').classList.contains('active')){renderAlertFeed();} },4000);
+
+// Live-sync: if the Tourist site and Police site are opened in two tabs on the
+// SAME origin (e.g. both hosted from the same server/folder), they share this
+// browser's localStorage, so changes on one side (new tourist ID, SOS, e-FIR,
+// new danger zone) refresh the other tab automatically.
+window.addEventListener('storage', e=>{
+  if(e.key===STORAGE_KEY && e.newValue){
+    try{ db = JSON.parse(e.newValue); renderAll(); }catch(err){}
+  }
+});
+
+(async function init(){
+  const loaded = await loadDB();
+  if(!loaded || !db.tourists.length){
+    const pos = await getInitialPosition();
+    mapCenter = pos || mapCenter;
+    seed(mapCenter);
+    await saveDB();
+  } else {
+    currentTouristId = db.tourists[0].touristId;
+    mapCenter = {lat:db.tourists[0].lat, lng:db.tourists[0].lng};
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>
